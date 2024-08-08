@@ -22,22 +22,25 @@ using DispatchDoctor: @stable
 
     System(H, H_x, H_p) = System(H, H_x, H_p, (x, p) -> ones(size(x)))
 
-    function sgmam(sys::System, x_initial;
-            ϵ::Float64 = 1e-1,
-            iterations::Int64 = 1000,
-            show_progress::Bool = false,
-            save_info::Bool = false,
-            reltol::Float64 = NaN)
+    function sgmam(
+        sys::System,
+        x_initial;
+        ϵ::Float64=1e-1,
+        iterations::Int64=1000,
+        show_progress::Bool=false,
+        save_info::Bool=false,
+        reltol::Float64=NaN,
+    )
         @unpack H_p, H_x = sys
 
         Nx, Nt = size(x_initial)
-        s = range(0, stop = 1, length = Nt)
+        s = range(0; stop=1, length=Nt)
         x, p, pdot, xdot, lambda, alpha = init_allocation(x_initial, Nt)
 
         S = CircularBuffer{Float64}(2)
         fill!(S, Inf)
 
-        progress = Progress(iterations; enabled = show_progress)
+        progress = Progress(iterations; enabled=show_progress)
         for i in 1:iterations
             update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
 
@@ -82,16 +85,16 @@ using DispatchDoctor: @stable
         central_diff!(xdotdot, xdot)
 
         # each dof has same lambda, but possibly different H_pp^{-1}
-        update_x!(x, lambda, pdot, xdotdot, Hx, ϵ)
+        return update_x!(x, lambda, pdot, xdotdot, Hx, ϵ)
     end
 
     function interpolate_path!(path, α, s)
-        α[2:end] .= vec(sqrt.(sum(diff(path; dims = 2) .^ 2, dims = 1)))
-        α .= cumsum(α; dims = 1)
+        α[2:end] .= vec(sqrt.(sum(diff(path; dims=2) .^ 2; dims=1)))
+        α .= cumsum(α; dims=1)
         α .= α ./ last(α)
         path[1, :] .= LinearInterpolation(α, path[1, :])(s)
         path[2, :] .= LinearInterpolation(α, path[2, :])(s)
-        nothing
+        return nothing
     end
 
     function update_x!(x, λ, p′, x′′, Hx, ϵ)
@@ -103,16 +106,17 @@ using DispatchDoctor: @stable
         # rhs = zeros(Nt)
         idxc = 2:(Nt - 1)
         for dof in 1:Nx
-            rhs = @. (x[dof, idxc] +
-                      ϵ * (λ[idxc] * p′[dof, idxc] + Hx[dof, idxc] -
-                       λ[idxc]^2 * x′′[dof, idxc]))
+            rhs = @. (
+                x[dof, idxc] +
+                ϵ * (λ[idxc] * p′[dof, idxc] + Hx[dof, idxc] - λ[idxc]^2 * x′′[dof, idxc])
+            )
             rhs[1] += ϵ * λ[2]^2 * xa[dof]
             rhs[end] += ϵ * λ[end - 1]^2 * xb[dof]
 
             A = spdiagm( # spdiagm makes it significantly faster
                 0 => 1 .+ 2 .* ϵ .* λ[2:(end - 1)] .^ 2,
                 1 => -ϵ .* λ[2:(end - 2)] .^ 2,
-                -1 => -ϵ .* λ[3:(end - 1)] .^ 2
+                -1 => -ϵ .* λ[3:(end - 1)] .^ 2,
             )
             prob = LinearProblem(A, rhs)
             x[dof, 2:(end - 1)] .= solve(prob, KLUFactorization()).u
@@ -124,8 +128,7 @@ using DispatchDoctor: @stable
         # Alternative: Direct computation, only correct for quadratic Hamiltonian in p,
         # where H_pp does not depend on p
         b_ = H_p(x, 0 * x)
-        lambda .= sqrt.(sum(b_ .^ 2, dims = 1) ./
-                        sum(xdot .^ 2, dims = 1))
+        lambda .= sqrt.(sum(b_ .^ 2; dims=1) ./ sum(xdot .^ 2; dims=1))
         lambda[1] = 0
         lambda[end] = 0
         p .= (lambda .* xdot .- b_)
@@ -135,10 +138,10 @@ using DispatchDoctor: @stable
     function central_diff!(xdot, x)
         # ̇xₙ = 0.5(xₙ₊₁ - xₙ₋₁) central finite difference
         xdot[:, 2:(end - 1)] = 0.5 * (x[:, 3:end] - x[:, 1:(end - 2)])
-        nothing
+        return nothing
     end
 
-    FW_action(xdot, p) = sum(sum(xdot .* p; dims = 1)) / 2
+    FW_action(xdot, p) = sum(sum(xdot .* p; dims=1)) / 2
 end # @stable
 
 end

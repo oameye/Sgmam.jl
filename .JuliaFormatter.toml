@@ -1,5 +1,5 @@
 # See https://domluna.github.io/JuliaFormatter.jl/stable/ for a list of options
-style = "sciml"
+style = "blue"
 align_assignment = true
 align_struct_field = true
 align_conditional = true
