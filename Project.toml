@@ -1,0 +1,13 @@
+name = "Sgmam"
+uuid = "b38dc27d-8db1-47e4-a9d7-d536c57c0d0f"
+authors = ["Orjan Ameye <orjan.ameye@hotmail.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
