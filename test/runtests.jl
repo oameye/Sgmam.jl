@@ -10,19 +10,19 @@ using Test
     Aqua.test_ambiguities(Sgmam)
     Aqua.test_all(
         Sgmam;
-        deps_compat=(
-            ignore=ignore_deps,
-            check_extras=(ignore=ignore_deps,),
-            check_weakdeps=(ignore=ignore_deps,),
+        deps_compat = (
+            ignore = ignore_deps,
+            check_extras = (ignore = ignore_deps,),
+            check_weakdeps = (ignore = ignore_deps,)
         ),
-        piracies=(
-            treat_as_own=[],
+        piracies = (
+            treat_as_own = [],
         ),
-        ambiguities=false,
+        ambiguities = false
     )
 end
 
 @testset "Code linting" begin
     using JET
-    JET.test_package(Sgmam; target_defined_modules=true)
+    JET.test_package(Sgmam; target_defined_modules = true)
 end
