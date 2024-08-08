@@ -1,6 +1,28 @@
 using Sgmam
 using Test
 
-@testset "Sgmam.jl" begin
-    # Write your tests here.
+@testset "Code quality" begin
+    using ExplicitImports, Aqua
+    ignore_deps = [:Random, :Printf, :Test, :Pkg]
+
+    @test check_no_stale_explicit_imports(Sgmam) == nothing
+    @test check_all_explicit_imports_via_owners(Sgmam) == nothing
+    Aqua.test_ambiguities(Sgmam)
+    Aqua.test_all(
+        Sgmam;
+        deps_compat=(
+            ignore=ignore_deps,
+            check_extras=(ignore=ignore_deps,),
+            check_weakdeps=(ignore=ignore_deps,),
+        ),
+        piracies=(
+            treat_as_own=[],
+        ),
+        ambiguities=false,
+    )
+end
+
+@testset "Code linting" begin
+    using JET
+    JET.test_package(Sgmam; target_defined_modules=true)
 end

@@ -3,11 +3,31 @@ uuid = "b38dc27d-8db1-47e4-a9d7-d536c57c0d0f"
 authors = ["Orjan Ameye <orjan.ameye@hotmail.com>"]
 version = "0.1.0"
 
+[deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
+DispatchDoctor = "8d63f2c5-f18a-4cf2-ba9d-b3f60fc568c8"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
 [compat]
+Aqua = "0.8"
+DataStructures = "0.18"
+Dierckx = "0.5"
+DispatchDoctor = "0.4"
+ExplicitImports = "1.9"
+JET = "0.9"
+LinearAlgebra = "1.10"
+ProgressMeter = "1.10"
+SparseArrays = "1.10"
 julia = "1.10"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
+JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Aqua", "JET", "ExplicitImports"]
