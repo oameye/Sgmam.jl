@@ -12,8 +12,8 @@ const η = 0
 const α = -1
 
 function get_steady_state(sys, x0)
-    steady_state(x) = sys.H_p(x, zeros(size(x)))
-    return Xs = nlsolve(steady_state, x0).zero
+  steady_state(x) = sys.H_p(x, zeros(size(x)))
+  return Xs = nlsolve(steady_state, x0).zero
 end
 
 include("systems/KPO.jl")
@@ -33,7 +33,7 @@ yy = @. (xb[2] - xa[2]) * s + xa[2] + 4 * s * (1 - s) * xsaddle[2] + 0.01 * sin(
 x_initial = Matrix([xx yy]')
 
 x_min, S_min, lambda, p, xdot = sgmam(
-    sys, x_initial; iterations=1_000, ϵ=10e2, show_progress=false
+  sys, x_initial; iterations=1_000, ϵ=10e2, show_progress=false
 )
 @show S_min;
 # plot(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
@@ -61,19 +61,19 @@ Sgmam.central_diff!(pdot, p)
 Hx = sys.H_x(x, p)
 
 rhs = @. (
-    x_min[dof, idxc] +
-    ϵ * (
-        lambda[idxc] * pdot[dof, idxc] + Hx[dof, idxc] -
-        iH[dof, idxc] * lambda[idxc]^2 * xdotdot[dof, idxc]
-    )
+  x_min[dof, idxc] +
+  ϵ * (
+    lambda[idxc] * pdot[dof, idxc] + Hx[dof, idxc] -
+    iH[dof, idxc] * lambda[idxc]^2 * xdotdot[dof, idxc]
+  )
 )
 rhs[1] += ϵ * iH[dof, 2] * lambda[2]^2 * xa[dof]
 rhs[end] += ϵ * iH[dof, end - 1] * lambda[end - 1]^2 * xb[dof]
 
 A = spdiagm( # spdiagm makes it significantly faster
-    0 => 1 .+ 2 .* ϵ .* iH[1, 2:(end - 1)] .* lambda[2:(end - 1)] .^ 2,
-    1 => -ϵ .* iH[1, 2:(end - 2)] .* lambda[2:(end - 2)] .^ 2,
-    -1 => -ϵ .* iH[1, 3:(end - 1)] .* lambda[3:(end - 1)] .^ 2,
+  0 => 1 .+ 2 .* ϵ .* iH[1, 2:(end - 1)] .* lambda[2:(end - 1)] .^ 2,
+  1 => -ϵ .* iH[1, 2:(end - 2)] .* lambda[2:(end - 2)] .^ 2,
+  -1 => -ϵ .* iH[1, 3:(end - 1)] .* lambda[3:(end - 1)] .^ 2,
 )
 using LinearSolve
 cond(Array(A), 2)

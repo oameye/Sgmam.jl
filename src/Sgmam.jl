@@ -13,135 +13,135 @@ using LinearAlgebra, SparseArrays
 using DispatchDoctor: @stable
 
 @stable begin # enforces type_stability
-    struct System
-        H::Function
-        H_x::Function
-        H_p::Function
-        invH_pp::Function
+  struct System
+    H::Function
+    H_x::Function
+    H_p::Function
+    invH_pp::Function
+  end
+
+  System(H, H_x, H_p) = System(H, H_x, H_p, (x, p) -> ones(size(x)))
+
+  function sgmam(
+    sys::System,
+    x_initial;
+    ϵ::Float64=1e-1,
+    iterations::Int64=1000,
+    show_progress::Bool=false,
+    save_info::Bool=false,
+    reltol::Float64=NaN,
+  )
+    @unpack H_p, H_x = sys
+
+    Nx, Nt = size(x_initial)
+    s = range(0; stop=1, length=Nt)
+    x, p, pdot, xdot, lambda, alpha = init_allocation(x_initial, Nt)
+
+    S = CircularBuffer{Float64}(2)
+    fill!(S, Inf)
+
+    progress = Progress(iterations; enabled=show_progress)
+    for i in 1:iterations
+      update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
+
+      # reparametrize to arclength
+      interpolate_path!(x, alpha, s)
+      push!(S, FW_action(xdot, p))
+
+      tol = abs(S[end] - S[1]) / S[end]
+      if tol < reltol
+        @info "Converged after $i iterations with $tol"
+        break
+      end
+      next!(progress)
     end
+    return (x, S[end], lambda, p, xdot)
+  end
 
-    System(H, H_x, H_p) = System(H, H_x, H_p, (x, p) -> ones(size(x)))
+  function init_allocation(x_initial, Nt)
+    # preallocate
+    x = deepcopy(x_initial)
+    p = zeros(size(x))
+    pdot = zeros(size(x))
+    xdot = zeros(size(x))
+    lambda = zeros(1, Nt) # Lagrange multiplier
+    alpha = zeros(Nt)
+    return x, p, pdot, xdot, lambda, alpha
+  end
 
-    function sgmam(
-        sys::System,
-        x_initial;
-        ϵ::Float64=1e-1,
-        iterations::Int64=1000,
-        show_progress::Bool=false,
-        save_info::Bool=false,
-        reltol::Float64=NaN,
-    )
-        @unpack H_p, H_x = sys
+  function update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
+    central_diff!(xdot, x)
 
-        Nx, Nt = size(x_initial)
-        s = range(0; stop=1, length=Nt)
-        x, p, pdot, xdot, lambda, alpha = init_allocation(x_initial, Nt)
+    update_p!(p, lambda, x, xdot, H_p)
 
-        S = CircularBuffer{Float64}(2)
-        fill!(S, Inf)
+    central_diff!(pdot, p)
+    Hx = H_x(x, p)
 
-        progress = Progress(iterations; enabled=show_progress)
-        for i in 1:iterations
-            update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
+    # explicit update (deactivated, using implicit instead)
+    # x = x + ϵ*(lambda .* pdot + Hx);
 
-            # reparametrize to arclength
-            interpolate_path!(x, alpha, s)
-            push!(S, FW_action(xdot, p))
+    # implicit update
+    xdotdot = zeros(size(xdot))
+    central_diff!(xdotdot, xdot)
 
-            tol = abs(S[end] - S[1]) / S[end]
-            if tol < reltol
-                @info "Converged after $i iterations with $tol"
-                break
-            end
-            next!(progress)
-        end
-        return (x, S[end], lambda, p, xdot)
+    # each dof has same lambda, but possibly different H_pp^{-1}
+    return update_x!(x, lambda, pdot, xdotdot, Hx, ϵ)
+  end
+
+  function interpolate_path!(path, α, s)
+    α[2:end] .= vec(sqrt.(sum(diff(path; dims=2) .^ 2; dims=1)))
+    α .= cumsum(α; dims=1)
+    α .= α ./ last(α)
+    path[1, :] .= LinearInterpolation(α, path[1, :])(s)
+    path[2, :] .= LinearInterpolation(α, path[2, :])(s)
+    return nothing
+  end
+
+  function update_x!(x, λ, p′, x′′, Hx, ϵ)
+    # each dof has same lambda, but possibly different H_pp^{-1}
+    Nx, Nt = size(x)
+    xa = x[:, 1]
+    xb = x[:, end]
+
+    # rhs = zeros(Nt)
+    idxc = 2:(Nt - 1)
+    for dof in 1:Nx
+      rhs = @. (
+        x[dof, idxc] +
+        ϵ * (λ[idxc] * p′[dof, idxc] + Hx[dof, idxc] - λ[idxc]^2 * x′′[dof, idxc])
+      )
+      rhs[1] += ϵ * λ[2]^2 * xa[dof]
+      rhs[end] += ϵ * λ[end - 1]^2 * xb[dof]
+
+      A = spdiagm( # spdiagm makes it significantly faster
+        0 => 1 .+ 2 .* ϵ .* λ[2:(end - 1)] .^ 2,
+        1 => -ϵ .* λ[2:(end - 2)] .^ 2,
+        -1 => -ϵ .* λ[3:(end - 1)] .^ 2,
+      )
+      prob = LinearProblem(A, rhs)
+      x[dof, 2:(end - 1)] .= solve(prob, KLUFactorization()).u
     end
+    return nothing
+  end
 
-    function init_allocation(x_initial, Nt)
-        # preallocate
-        x = deepcopy(x_initial)
-        p = zeros(size(x))
-        pdot = zeros(size(x))
-        xdot = zeros(size(x))
-        lambda = zeros(1, Nt) # Lagrange multiplier
-        alpha = zeros(Nt)
-        return x, p, pdot, xdot, lambda, alpha
-    end
+  function update_p!(p, lambda, x, xdot, H_p)
+    # Alternative: Direct computation, only correct for quadratic Hamiltonian in p,
+    # where H_pp does not depend on p
+    b_ = H_p(x, 0 * x)
+    lambda .= sqrt.(sum(b_ .^ 2; dims=1) ./ sum(xdot .^ 2; dims=1))
+    lambda[1] = 0
+    lambda[end] = 0
+    p .= (lambda .* xdot .- b_)
+    return nothing
+  end
 
-    function update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
-        central_diff!(xdot, x)
+  function central_diff!(xdot, x)
+    # ̇xₙ = 0.5(xₙ₊₁ - xₙ₋₁) central finite difference
+    xdot[:, 2:(end - 1)] = 0.5 * (x[:, 3:end] - x[:, 1:(end - 2)])
+    return nothing
+  end
 
-        update_p!(p, lambda, x, xdot, H_p)
-
-        central_diff!(pdot, p)
-        Hx = H_x(x, p)
-
-        # explicit update (deactivated, using implicit instead)
-        # x = x + ϵ*(lambda .* pdot + Hx);
-
-        # implicit update
-        xdotdot = zeros(size(xdot))
-        central_diff!(xdotdot, xdot)
-
-        # each dof has same lambda, but possibly different H_pp^{-1}
-        return update_x!(x, lambda, pdot, xdotdot, Hx, ϵ)
-    end
-
-    function interpolate_path!(path, α, s)
-        α[2:end] .= vec(sqrt.(sum(diff(path; dims=2) .^ 2; dims=1)))
-        α .= cumsum(α; dims=1)
-        α .= α ./ last(α)
-        path[1, :] .= LinearInterpolation(α, path[1, :])(s)
-        path[2, :] .= LinearInterpolation(α, path[2, :])(s)
-        return nothing
-    end
-
-    function update_x!(x, λ, p′, x′′, Hx, ϵ)
-        # each dof has same lambda, but possibly different H_pp^{-1}
-        Nx, Nt = size(x)
-        xa = x[:, 1]
-        xb = x[:, end]
-
-        # rhs = zeros(Nt)
-        idxc = 2:(Nt - 1)
-        for dof in 1:Nx
-            rhs = @. (
-                x[dof, idxc] +
-                ϵ * (λ[idxc] * p′[dof, idxc] + Hx[dof, idxc] - λ[idxc]^2 * x′′[dof, idxc])
-            )
-            rhs[1] += ϵ * λ[2]^2 * xa[dof]
-            rhs[end] += ϵ * λ[end - 1]^2 * xb[dof]
-
-            A = spdiagm( # spdiagm makes it significantly faster
-                0 => 1 .+ 2 .* ϵ .* λ[2:(end - 1)] .^ 2,
-                1 => -ϵ .* λ[2:(end - 2)] .^ 2,
-                -1 => -ϵ .* λ[3:(end - 1)] .^ 2,
-            )
-            prob = LinearProblem(A, rhs)
-            x[dof, 2:(end - 1)] .= solve(prob, KLUFactorization()).u
-        end
-        return nothing
-    end
-
-    function update_p!(p, lambda, x, xdot, H_p)
-        # Alternative: Direct computation, only correct for quadratic Hamiltonian in p,
-        # where H_pp does not depend on p
-        b_ = H_p(x, 0 * x)
-        lambda .= sqrt.(sum(b_ .^ 2; dims=1) ./ sum(xdot .^ 2; dims=1))
-        lambda[1] = 0
-        lambda[end] = 0
-        p .= (lambda .* xdot .- b_)
-        return nothing
-    end
-
-    function central_diff!(xdot, x)
-        # ̇xₙ = 0.5(xₙ₊₁ - xₙ₋₁) central finite difference
-        xdot[:, 2:(end - 1)] = 0.5 * (x[:, 3:end] - x[:, 1:(end - 2)])
-        return nothing
-    end
-
-    FW_action(xdot, p) = sum(sum(xdot .* p; dims=1)) / 2
+  FW_action(xdot, p) = sum(sum(xdot .* p; dims=1)) / 2
 end # @stable
 
 end
