@@ -1,13 +1,6 @@
 using Sgmam, Plots, NLsolve
 using BenchmarkTools
 
-const λ = 3 / 1.21 * 2 / 295
-const ω0 = 1.000
-const ω = 1.000
-const γ = 1 / 295
-const η = 0
-const α = -1
-
 function get_steady_state(sys, x0)
     steady_state(x) = sys.H_p(x, zeros(size(x)))
     return Xs = nlsolve(steady_state, x0).zero
@@ -33,8 +26,13 @@ x_min, S_min, lambda, p, xdot = sgmam(
     sys, x_initial; iterations=1_000, ϵ=10e2, show_progress=false
 )
 @show S_min;
-# plot(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
-# plot!(x_min[1, :], x_min[2, :], label = "MLP", lw=3, c=:red)
+plot(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
+plot!(x_min[1, :], x_min[2, :], label = "MLP", lw=3, c=:red)
 
 @benchmark $sgmam($sys, $x_initial, iterations=100, ϵ=10e2, show_progress=false)
-@profview sgmam(sys, x_initial, iterations=100, ϵ=10e2, show_progress=false)
+# @profview sgmam(sys, x_initial, iterations=100, ϵ=10e2, show_progress=false)
+# v_range = range(-.15, .15, 100); u_range = range(-.05, .05, 100)
+# iter = Iterators.product(u_range, v_range) |> collect
+# heatmap(u_range,v_range,map( x-> H([x...], ones(2))[1], iter)')
+# plot!(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
+# plot!(x_min[1, :], x_min[2, :], label = "MLP", lw=3, c=:red)
