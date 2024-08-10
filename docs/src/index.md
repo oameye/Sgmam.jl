@@ -4,7 +4,7 @@ CurrentModule = Sgmam
 
 # Sgmam
 
-Documentation for [Sgmam](https://github.com/Orjan Ameye/Sgmam.jl).
+Documentation for [Sgmam](https://github.com/oameye/Sgmam.jl).
 
 ```@index
 ```
