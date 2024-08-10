@@ -20,7 +20,7 @@ makedocs(;
     edit_link = "master",
     assets    = String[],
   ),
-  pages=["Home" => "index.md", "API" => "api.md"],
+  pages=["Home" => "index.md", "API" => "API.md"],
 )
 
 if CI
