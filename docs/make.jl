@@ -1,7 +1,15 @@
+CI = get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
+
 using Sgmam
 using Documenter
 
 DocMeta.setdocmeta!(Sgmam, :DocTestSetup, :(using Sgmam); recursive=true)
+
+using Downloads: Downloads
+Downloads.download(
+  "https://raw.githubusercontent.com/oameye/sgmam.jl/master/README.md",
+  joinpath(@__DIR__, "src/index.md"),
+)
 
 makedocs(;
   modules=[Sgmam],
@@ -12,7 +20,9 @@ makedocs(;
     edit_link = "master",
     assets    = String[],
   ),
-  pages=["Home" => "index.md"],
+  pages=["Home" => "index.md", "API" => "api.md"],
 )
 
-deploydocs(; repo="github.com/oameye/Sgmam.jl", devbranch="master")
+if CI
+  deploydocs(; repo="github.com/oameye/Sgmam.jl", devbranch="master")
+end
