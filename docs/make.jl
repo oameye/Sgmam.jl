@@ -7,11 +7,11 @@ using DocumenterCitations
 
 DocMeta.setdocmeta!(Sgmam, :DocTestSetup, :(using Sgmam); recursive=true)
 
-using Downloads: Downloads
-Downloads.download(
-  "https://raw.githubusercontent.com/oameye/sgmam.jl/master/README.md",
-  joinpath(@__DIR__, "src/index.md"),
-)
+# using Downloads: Downloads
+# Downloads.download(
+#   "https://raw.githubusercontent.com/oameye/sgmam.jl/master/README.md",
+#   joinpath(@__DIR__, "src/index.md"),
+# )
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "refs.bib");
