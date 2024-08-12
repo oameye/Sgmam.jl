@@ -1,17 +1,21 @@
 name: CI
+
 on:
+  # Runs on pushes targeting the `master` branch.
   push:
     branches:
       - master
     tags: ['*']
   pull_request:
-  workflow_dispatch:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:   
+
 concurrency:
-  # Skip intermediate builds: always.
-  # Cancel intermediate builds: only if it is a pull request build.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+  group: ${{ github.workflow }}-${{ github.ref }} # Skip intermediate builds: always
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }} # Cancel intermediate builds: only if it is a pull request build.
+
 jobs:
+  # Build job
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
@@ -44,6 +48,8 @@ jobs:
     permissions:
       actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
       contents: write
+      pages: write
+      id-token: write
       statuses: write
     steps:
       - uses: actions/checkout@v4
