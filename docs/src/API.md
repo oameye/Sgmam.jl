@@ -1,12 +1,18 @@
-```@meta
-CurrentModule = Sgmam
+```@raw html
+---
+outline: deep
+---
 ```
 
-# Sgmam
+## Public API
 
-Documentation for [Sgmam](https://github.com/oameye/Sgmam.jl).
-
+```@meta
+DocTestSetup= quote
+using Sgmam
+end
+```
 
 ```@autodocs
 Modules = [Sgmam]
+Private = false
 ```
