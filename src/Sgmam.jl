@@ -40,7 +40,7 @@ using DispatchDoctor: @stable
     S = CircularBuffer{Float64}(2)
     fill!(S, Inf)
 
-    progress = Progress(iterations; enabled=show_progress, showspeed=false)
+    progress = Progress(iterations; dt=0.5, enabled=show_progress, showspeed=false)
     for i in 1:iterations
       update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
 
@@ -53,7 +53,11 @@ using DispatchDoctor: @stable
         @info "Converged after $i iterations with $tol"
         break
       end
-      next!(progress; showvalues = [("iterations",i), ("Stol",round(tol, sigdigits=3))])
+      if i % (iterations ÷ 50) == 0
+        next!(progress;
+        showvalues = [("iterations",i), ("Stol",round(tol, sigdigits=3))])
+      end
+
     end
     return (x, S[end], lambda, p, xdot)
   end
