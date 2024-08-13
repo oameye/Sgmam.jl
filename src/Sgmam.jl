@@ -40,7 +40,7 @@ using DispatchDoctor: @stable
     S = CircularBuffer{Float64}(2)
     fill!(S, Inf)
 
-    progress = Progress(iterations; dt=0.5, enabled=show_progress, showspeed=false)
+    progress = Progress(iterations; dt=0.5, enabled=show_progress)
     for i in 1:iterations
       update!(x, xdot, p, pdot, lambda, H_x, H_p, ϵ)
 
