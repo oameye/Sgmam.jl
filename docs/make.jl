@@ -14,8 +14,8 @@ DocMeta.setdocmeta!(Sgmam, :DocTestSetup, :(using Sgmam); recursive=true)
 # )
 
 bib = CitationBibliography(
-    joinpath(@__DIR__, "src", "refs.bib");
-    style=:numeric  # default
+  joinpath(@__DIR__, "src", "refs.bib");
+  style=:numeric,  # default
 )
 
 makedocs(;
@@ -24,19 +24,18 @@ makedocs(;
   authors="Orjan Ameye <orjan.ameye@hotmail.com>",
   sitename="Sgmam.jl",
   format=DocumenterVitepress.MarkdownVitepress(;
-    repo="github.com/oameye/Sgmam.jl",
-    devbranch = "master",
-    devurl = "dev",
+    repo="github.com/oameye/Sgmam.jl", devbranch="master", devurl="dev"
   ),
   pages=["Home" => "index.md", "API" => "API.md"],
-  plugins = [bib,],
+  plugins=[bib],
 )
 
 if CI
   deploydocs(;
-   repo="github.com/oameye/Sgmam.jl",
-   devbranch="master",
-   target = "build",
-   branch = "gh-pages",
-   push_preview = true,)
+    repo="github.com/oameye/Sgmam.jl",
+    devbranch="master",
+    target="build",
+    branch="gh-pages",
+    push_preview=true,
+  )
 end

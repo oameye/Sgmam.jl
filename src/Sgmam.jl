@@ -53,11 +53,7 @@ using DispatchDoctor: @stable
         @info "Converged after $i iterations with $tol"
         break
       end
-      if i % (iterations ÷ 50) == 0
-        next!(progress;
-        showvalues = [("iterations",i), ("Stol",round(tol, sigdigits=3))])
-      end
-
+      next!(progress; showvalues=[("iterations", i), ("Stol", round(tol; sigdigits=3))])
     end
     return (x, S[end], lambda, p, xdot)
   end
