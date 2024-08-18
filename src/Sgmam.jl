@@ -92,8 +92,9 @@ using DispatchDoctor: @stable
     α[2:end] .= vec(sqrt.(sum(diff(path; dims=2) .^ 2; dims=1)))
     α .= cumsum(α; dims=1)
     α .= α ./ last(α)
-    path[1, :] .= LinearInterpolation(α, path[1, :])(s)
-    path[2, :] .= LinearInterpolation(α, path[2, :])(s)
+    for dof in 1:size(path, 1)
+      path[dof, :] .= LinearInterpolation(α, path[dof, :])(s)
+    end
     return nothing
   end
 
