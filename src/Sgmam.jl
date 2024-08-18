@@ -14,13 +14,9 @@ using DispatchDoctor: @stable
 
 @stable begin # enforces type_stability
   struct System
-    H::Function
     H_x::Function
     H_p::Function
-    invH_pp::Function
   end
-
-  System(H, H_x, H_p) = System(H, H_x, H_p, (x, p) -> ones(size(x)))
 
   function sgmam(
     sys::System,
