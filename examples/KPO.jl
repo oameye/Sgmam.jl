@@ -1,4 +1,5 @@
 using Sgmam, Plots, NLsolve
+using LinearSolve
 using BenchmarkTools
 
 function get_steady_state(sys, x0)
@@ -7,7 +8,7 @@ function get_steady_state(sys, x0)
 end
 
 include("systems/KPO.jl")
-sys = System(H, H_x, H_p)
+sys = System(H_x, H_p)
 
 # setup
 Nt = 500  # number of discrete time steps
@@ -29,10 +30,7 @@ x_min, S_min, lambda, p, xdot = sgmam(
 plot(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
 plot!(x_min[1, :], x_min[2, :], label = "MLP", lw=3, c=:red)
 
-# @benchmark $sgmam($sys, $x_initial, iterations=100, ϵ=10e2, show_progress=false)
-# @profview sgmam(sys, x_initial, iterations=100, ϵ=10e2, show_progress=false)
-# v_range = range(-.15, .15, 100); u_range = range(-.05, .05, 100)
-# iter = Iterators.product(u_range, v_range) |> collect
-# heatmap(u_range,v_range,map( x-> H([x...], ones(2))[1], iter)')
-# plot!(x_initial[1, :], x_initial[2, :], label = "init", lw=3, c=:black)
-# plot!(x_min[1, :], x_min[2, :], label = "MLP", lw=3, c=:red)
+@btime $sgmam($sys, $x_initial, iterations=100, ϵ=10e2, show_progress=false) # 25.803 ms (29024 allocations: 105.69 MiB)
+@profview sgmam(sys, x_initial, iterations=100, ϵ=10e2, show_progress=false)
+
+# The bottleneck is atm at the LinearSolve call to update the x in the new iteration. So the more improve, one needs to write it own LU factorization.
