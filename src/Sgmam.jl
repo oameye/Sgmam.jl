@@ -102,7 +102,7 @@ using DispatchDoctor: @stable
 
     # rhs = zeros(Nt)
     idxc = 2:(Nt - 1)
-    for dof in 1:Nx
+    Threads.@threads for dof in 1:Nx
       rhs = @. (
         x[dof, idxc] +
         ϵ * (λ[idxc] * p′[dof, idxc] + Hx[dof, idxc] - λ[idxc]^2 * x′′[dof, idxc])
