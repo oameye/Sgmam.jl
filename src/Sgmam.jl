@@ -24,7 +24,6 @@ using DispatchDoctor: @stable
     ϵ::Float64=1e-1,
     iterations::Int64=1000,
     show_progress::Bool=false,
-    save_info::Bool=false,
     reltol::Float64=NaN,
   )
     @unpack H_p, H_x = sys
