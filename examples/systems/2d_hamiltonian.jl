@@ -9,7 +9,7 @@ function H_x(x, p) # ℜ² → ℜ²
 
     H_u = @. pu*dfudu(u, v) + pv*dfvdu(u, v)
     H_v = @. pu*dfudv(u, v) + pv*dfvdv(u, v)
-    return Matrix([H_u H_v]')
+    return Matrix{eltype(x)}([H_u H_v]')
 end
 function H_p(x, p) # ℜ² → ℜ²
     u, v = eachrow(x)
@@ -17,5 +17,5 @@ function H_p(x, p) # ℜ² → ℜ²
 
     H_pu = @. pu + fu(u, v)
     H_pv = @. pv + fv(u, v)
-    return Matrix([H_pu H_pv]')
+    return Matrix{eltype(x)}([H_pu H_pv]')
 end
